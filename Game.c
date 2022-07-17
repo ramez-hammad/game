@@ -1,3 +1,5 @@
+#include <ncurses.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,9 +12,9 @@
 #define RIGHT 4
 
 void 
-refresh(char grid[21][17])
+refresh_(char grid[21][17])
 {
-        system("clear");
+        clear();
 
         for (int i = 0; i < 21; i++)
         {
@@ -20,35 +22,28 @@ refresh(char grid[21][17])
                 {
                         if (grid[i][j] == 0)
                         {
-                                printf("  ");
+                                printw("  ");
                         } else if (grid[i][j] == 2) {
-                                printf("# ");
+                                printw("# ");
                         } else {
-                                printf("^ ");
+                                printw("^ ");
                         }
                 }
 
-                printf("\n");
+                printw("\n");
         }
-}
 
-void
-configure_terminal(void)
-{
-        static struct termios terminal_settings;
-
-        tcgetattr( STDIN_FILENO, &terminal_settings);
-
-        terminal_settings.c_lflag &= ~(ICANON);          
-        terminal_settings.c_lflag &= ~(ECHO);
-
-        tcsetattr( STDIN_FILENO, TCSANOW, &terminal_settings);
+        refresh();
 }
 
 int
 main(void)
 {
-       configure_terminal();
+       initscr();
+
+       noecho();
+
+       curs_set(0);
 
        char grid[21][17] = {
                                 {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2},
@@ -79,83 +74,94 @@ main(void)
         int initial_position = 19;
         int current_position = initial_position;
 
-        int key;
+        char key;
         int direction;
 
-        refresh(grid);
+        refresh_(grid);
 
         while (1)
         {
-                if ((key = getchar()) != EOF)
+                key = getch();
+
+                switch (key)
                 {
-                        switch (key)
-                        {
-                                case 'w':
-                                        if (*(ptr + current_position - 18) == 2)
-                                        {
-                                                break;
-                                        }
+                        case 'w':
+                                napms(125);
 
-                                        *(ptr + current_position - 1) = 0;
-                                        *(ptr + current_position - 18) = 1;
-
-                                        refresh(grid);
-
-                                        current_position -= 17;
-                                        direction = UP;
-
+                                if (*(ptr + current_position - 18) == 2)
+                                {
                                         break;
+                                }
 
-                                case 'a':
-                                        if (*(ptr + current_position - 2) == 2)
-                                        {
-                                                break;
-                                        }
+                                *(ptr + current_position - 1) = 0;
+                                *(ptr + current_position - 18) = 1;
 
-                                        *(ptr + current_position - 1) = 0;
-                                        *(ptr + current_position - 2) = 1;
+                                refresh_(grid);
 
-                                        refresh(grid);
+                                current_position -= 17;
+                                direction = UP;
 
-                                        current_position -= 1;
-                                        direction = LEFT;
+                                break;
 
+                        case 'a':
+                                napms(125);
+
+                                if (*(ptr + current_position - 2) == 2)
+                                {
                                         break;
+                                }
 
-                                case 's':
-                                        if (*(ptr + current_position + 16) == 2)
-                                        {
-                                                break;
-                                        }
+                                *(ptr + current_position - 1) = 0;
+                                *(ptr + current_position - 2) = 1;
 
-                                        *(ptr + current_position - 1) = 0;
-                                        *(ptr + current_position + 16) = 1;
+                                refresh_(grid);
 
-                                        refresh(grid);
+                                current_position -= 1;
+                                direction = LEFT;
 
-                                        current_position += 17;
-                                        direction = DOWN;
+                                break;
 
+                        case 's':
+                                napms(125);
+
+                                if (*(ptr + current_position + 16) == 2)
+                                {
                                         break;
+                                }
 
-                                case 'd':
-                                        if (*(ptr + current_position) == 2)
-                                        {
-                                                break;
-                                        }
+                                *(ptr + current_position - 1) = 0;
+                                *(ptr + current_position + 16) = 1;
 
-                                        *(ptr + current_position - 1) = 0;
-                                        *(ptr + current_position) = 1;
+                                refresh_(grid);
 
-                                        refresh(grid);
+                                current_position += 17;
+                                direction = DOWN;
 
-                                        current_position += 1;
-                                        direction = RIGHT;
+                                break;
 
+                        case 'd':
+                                napms(125);
+
+                                if (*(ptr + current_position) == 2)
+                                {
                                         break;
-                        }
+                                }
+
+                                *(ptr + current_position - 1) = 0;
+                                *(ptr + current_position) = 1;
+
+                                refresh_(grid);
+
+                                current_position += 1;
+                                direction = RIGHT;
+
+                                break;
                 }
+
+                flushinp();
         }
-        
+
+        endwin();
+
         return EXIT_SUCCESS;
 }
