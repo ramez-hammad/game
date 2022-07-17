@@ -1,56 +1,44 @@
+#include <ncurses.h>
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <termios.h>
-#include <unistd.h>
 
-#define UP 1
-#define DOWN 2
-#define LEFT 3
-#define RIGHT 4
-
+/* print_map: clears screen and prints the map */
 void 
-refresh(char grid[21][17])
+print_map(char map[21][17])
 {
-        system("clear");
+        clear(); /* Clear the screen */
 
         for (int i = 0; i < 21; i++)
         {
                 for (int j = 0; j < 17; j++)
                 {
-                        if (grid[i][j] == 0)
+                        if (map[i][j] == 0)
                         {
-                                printf("  ");
-                        } else if (grid[i][j] == 2) {
-                                printf("# ");
+                                printw("  ");
+                        } else if (map[i][j] == 2) {
+                                printw("# ");
                         } else {
-                                printf("^ ");
+                                printw("^ ");
                         }
                 }
 
-                printf("\n");
+                printw("\n");
         }
-}
 
-void
-configure_terminal(void)
-{
-        static struct termios terminal_settings;
-
-        tcgetattr( STDIN_FILENO, &terminal_settings);
-
-        terminal_settings.c_lflag &= ~(ICANON);          
-        terminal_settings.c_lflag &= ~(ECHO);
-
-        tcsetattr( STDIN_FILENO, TCSANOW, &terminal_settings);
+        refresh(); /* Changes are not printed to the actual screen until refresh is called */
 }
 
 int
 main(void)
 {
-       configure_terminal();
+       initscr(); /* Enter curses mode */
 
-       char grid[21][17] = {
+       noecho(); /* Switch off keyboard input echo */
+
+       curs_set(0); /* Set cursor state to invisible  */
+
+       char map[21][17] = {
                                 {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2},
                                 {2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
                                 {2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2},
@@ -74,88 +62,114 @@ main(void)
                                 {2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}
                           };
 
-        char *ptr = &grid[0][0];
+        char *ptr = &map[0][0];
 
-        int initial_position = 19;
-        int current_position = initial_position;
+        int current_position = 19; /* Set player position */
 
-        int key;
-        int direction;
+        char key;
 
-        refresh(grid);
+        print_map(map);
 
         while (1)
         {
-                if ((key = getchar()) != EOF)
+                key = getch();
+
+                switch (key)
                 {
-                        switch (key)
-                        {
-                                case 'w':
-                                        if (*(ptr + current_position - 18) == 2)
-                                        {
-                                                break;
-                                        }
+                        case 'w':
+                                napms(125); /* Sleep for 125 ms */
 
-                                        *(ptr + current_position - 1) = 0;
-                                        *(ptr + current_position - 18) = 1;
 
-                                        refresh(grid);
+                                /* 
+                                 *
+                                 *
+                                 *
+                                 *
+                                 *
+                                 *
+                                 *
+                                 * Since array elements are stored one after another in the memory, and knowing
+                                 * the number of columns in the array, we can move the character one row up using
+                                 * a pointer to change the position of the character 17 (Number of columns) 
+                                 * elements back.
+                                 *
+                                 * Similarly,
+                                 * we can move the position 17 elements forward to move the character one row down.
+                                 *
+                                 * Using the same way, we can move the character 1 element forward to move it to the right,
+                                 * and 1 element backward to move it to the left. 
+                                 *
+                                 *
+                                 *
+                                 *
+                                 *
+                                 *
+                                 * 
+                                 */
 
-                                        current_position -= 17;
-                                        direction = UP;
-
+                                if (*(ptr + current_position - 17 - 1) == 2) 
+                                {
                                         break;
+                                }
 
-                                case 'a':
-                                        if (*(ptr + current_position - 2) == 2)
-                                        {
-                                                break;
-                                        }
+                                *(ptr + current_position - 1) = 0;
+                                *(ptr + current_position - 18) = 1;
 
-                                        *(ptr + current_position - 1) = 0;
-                                        *(ptr + current_position - 2) = 1;
+                                current_position -= 17;
 
-                                        refresh(grid);
+                                break;
 
-                                        current_position -= 1;
-                                        direction = LEFT;
+                        case 'a':
+                                napms(125);
 
+                                if (*(ptr + current_position - 2) == 2)
+                                {
                                         break;
+                                }
 
-                                case 's':
-                                        if (*(ptr + current_position + 16) == 2)
-                                        {
-                                                break;
-                                        }
+                                *(ptr + current_position - 1) = 0;
+                                *(ptr + current_position - 2) = 1;
 
-                                        *(ptr + current_position - 1) = 0;
-                                        *(ptr + current_position + 16) = 1;
+                                current_position -= 1;
 
-                                        refresh(grid);
+                                break;
 
-                                        current_position += 17;
-                                        direction = DOWN;
+                        case 's':
+                                napms(125);
 
+                                if (*(ptr + current_position + 16) == 2)
+                                {
                                         break;
+                                }
 
-                                case 'd':
-                                        if (*(ptr + current_position) == 2)
-                                        {
-                                                break;
-                                        }
+                                *(ptr + current_position - 1) = 0;
+                                *(ptr + current_position + 16) = 1;
 
-                                        *(ptr + current_position - 1) = 0;
-                                        *(ptr + current_position) = 1;
+                                current_position += 17;
 
-                                        refresh(grid);
+                                break;
 
-                                        current_position += 1;
-                                        direction = RIGHT;
+                        case 'd':
+                                napms(125);
 
+                                if (*(ptr + current_position) == 2)
+                                {
                                         break;
-                        }
+                                }
+
+                                *(ptr + current_position - 1) = 0;
+                                *(ptr + current_position) = 1;
+
+                                current_position += 1;
+
+                                break;
                 }
+
+                print_map(map);
+                flushinp(); /* Flush stdin */
         }
-        
+
+        endwin(); /* Exit curses mode */
+
         return EXIT_SUCCESS;
 }
